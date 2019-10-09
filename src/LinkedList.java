@@ -1,29 +1,19 @@
 /**
- * 
- */
-
-/**
- * Array based implementation of a List
+ * Node based implementation of a List.
  * 
  * @author Tim Bender
- * @version 2019.10.07
- * @param <E>
- *            the type of Object being stored in the List
+ * @version 2017.10.08
  */
-public class ArrayList<E> implements List<E> {
-    private E[] arr;
+public class LinkedList<E> implements List<E> {
+    private Node<E> head;
+    private Node<E> tail;
     private int size;
 
 
     /**
-     * Constructor
-     * 
-     * @param l
-     *            starting length for the array
+     * A constructor
      */
-    @SuppressWarnings("unchecked")
-    public ArrayList(int l) {
-        arr = (E[])new Object[l];
+    public LinkedList() {
         size = 0;
     }
 
@@ -36,12 +26,17 @@ public class ArrayList<E> implements List<E> {
      */
     @Override
     public void add(E element) {
-        if (isFull()) {
-            expandArr();
+        Node<E> n = new Node<E>(element);
+        if (size == 0) {
+            head = n;
+            tail = n;
+            size++;
         }
-        // add element
-        arr[size] = element;
-        size++;
+        else {
+            tail.setNext(n);
+            tail = n;
+            size++;
+        }
     }
 
 
@@ -59,16 +54,20 @@ public class ArrayList<E> implements List<E> {
             throw new IllegalArgumentException(
                 "Index to be added to must be less than or equal to size");
         }
-        if (isFull()) {
-            expandArr();
+        if (index == 0) {
+            Node<E> temp = new Node<E>(element, head);
+            head = temp;
+            size++;
+            return;
         }
-        E curr = element;
-        E temp = null;
-        for (int i = index; i <= size; i++) {
-            temp = arr[i];
-            arr[i] = curr;
-            curr = temp;
+
+        // general case
+        Node<E> curr = head;
+        for (int i = 0; i < index - 1; i++) {
+            curr = curr.next();
         }
+        Node<E> temp = curr.next();
+        curr.setNext(new Node<E>(element, temp));
         size++;
     }
 
@@ -82,10 +81,12 @@ public class ArrayList<E> implements List<E> {
      */
     @Override
     public boolean contains(Object o) {
-        for (int i = 0; i < size; i++) {
-            if (arr[i].equals(o)) {
+        Node<E> curr = head;
+        while (curr != null) {
+            if (curr.data().equals(o)) {
                 return true;
             }
+            curr = curr.next();
         }
         return false;
     }
@@ -107,33 +108,21 @@ public class ArrayList<E> implements List<E> {
         }
         if (this.getClass() == o.getClass()) {
             @SuppressWarnings("unchecked")
-            ArrayList<E> other = ((ArrayList<E>)o);
+            LinkedList<E> other = ((LinkedList<E>)o);
             if (other.size() == this.size()) {
-                // check elements
-                for (int i = 0; i < size; i++) {
-                    if (!arr[i].equals(other.get(i))) {
+                Node<E> current = head;
+                Node<E> otherCurrent = other.head;
+                while (current != null) {
+                    if (!current.data().equals(otherCurrent.data())) {
                         return false;
                     }
+                    current = current.next();
+                    otherCurrent = otherCurrent.next();
                 }
                 return true;
             }
         }
         return false;
-    }
-
-
-    /**
-     * Expands the underlying array
-     */
-    @SuppressWarnings("unchecked")
-    private void expandArr() {
-        int nLen = arr.length * 2;
-        E[] tempArr = (E[])(new Object[nLen]);
-        // copy elements over
-        for (int i = 0; i < arr.length; i++) {
-            tempArr[i] = arr[i];
-        }
-        arr = tempArr;
     }
 
 
@@ -146,7 +135,14 @@ public class ArrayList<E> implements List<E> {
      */
     @Override
     public E get(int index) {
-        return arr[index];
+        if (index > size - 1) {
+            return null;
+        }
+        Node<E> curr = head;
+        for (int i = 0; i < index; i++) {
+            curr = curr.next();
+        }
+        return curr.data();
     }
 
 
@@ -159,22 +155,14 @@ public class ArrayList<E> implements List<E> {
      */
     @Override
     public int indexOf(Object o) {
+        Node<E> curr = head;
         for (int i = 0; i < size; i++) {
-            if (arr[i].equals(o)) {
+            if (curr.data().equals(o)) {
                 return i;
             }
+            curr = curr.next();
         }
         return -1;
-    }
-
-
-    /**
-     * Helper method to see if arr is full
-     * 
-     * @return true if our array is full
-     */
-    private boolean isFull() {
-        return arr.length == size;
     }
 
 
@@ -188,16 +176,26 @@ public class ArrayList<E> implements List<E> {
      */
     @Override
     public E remove(int index) {
-        if (index >= size) {
+        if (index > size - 1) {
             return null;
         }
-        E temp = arr[index];
-        for (int i = index; i < size - 1; i++) {
-            arr[i] = arr[i + 1];
+        if (index == 0) {
+            E data = head.data();
+            head = head.next();
+            size--;
+            return data;
         }
-        arr[size - 1] = null;
+        Node<E> curr = head;
+        for (int i = 0; i < index - 1; i++) {
+            curr = curr.next();
+        }
+        if (index == size - 1) {
+            tail = curr;
+        }
+        E data = curr.next().data();
+        curr.setNext(curr.next().next());
         size--;
-        return temp;
+        return data;
     }
 
 
@@ -211,10 +209,26 @@ public class ArrayList<E> implements List<E> {
      */
     @Override
     public E remove(Object o) {
-        for (int i = 0; i < size; i++) {
-            if (arr[i].equals(o)) {
-                return remove(i);
+        if (head.data().equals(o)) {
+            E data = head.data();
+            head = head.next();
+            size--;
+            return data;
+        }
+        Node<E> curr = head;
+        for (int i = 0; i < size - 1; i++) {
+            if (curr.next().data().equals(o)) {
+                // update tail
+                if (curr.next().equals(tail)) {
+                    tail = curr;
+                }
+                // remove node
+                E data = curr.next().data();
+                curr.setNext(curr.next().next());
+                size--;
+                return data;
             }
+            curr = curr.next();
         }
         return null;
     }
@@ -223,7 +237,7 @@ public class ArrayList<E> implements List<E> {
     /**
      * Gets the number of elements in the list
      * 
-     * @return size, the number of elements in the list
+     * @return the number of elements in the list
      */
     @Override
     public int size() {
@@ -238,10 +252,13 @@ public class ArrayList<E> implements List<E> {
      */
     @Override
     public Object[] toArray() {
-        Object[] array = new Object[size];
+        Object[] arr = new Object[size];
+        Node<E> curr = head;
         for (int i = 0; i < size; i++) {
-            array[i] = arr[i];
+            arr[i] = curr.data();
+            curr = curr.next();
         }
-        return array;
+        return arr;
     }
+
 }
