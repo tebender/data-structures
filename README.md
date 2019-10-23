@@ -1,2 +1,2 @@
 # data-structures
-Personal implementations of standard data structures in Java.
+Implementations of standard data structures in Java.
